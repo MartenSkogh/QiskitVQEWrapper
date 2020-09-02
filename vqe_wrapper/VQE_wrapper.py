@@ -116,16 +116,11 @@ class VQEWrapper():
 
     def run_vqe(self):
         # run the algorithm
-        #print("\nRunning VQE:")
         vqe_start = timer()
         self.vqe_result = self.vqe_algo.run(self.quantum_instance)
         self.vqe_time = timer() - vqe_start
 
         # get the results
         result = self.core.process_algorithm_result(self.vqe_result) 
-        #cost_function_evals = result['algorithm_result']['cost_function_evals']
 
-        #statevector = result['algorithm_retvals']['eigenstate']
-        #nuclear_repulsion_energy = result['nuclear_repulsion_energy']
-        #hartree_fock_energy = result['hf_energy']
         return result
