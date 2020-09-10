@@ -90,14 +90,13 @@ class VQEWrapper():
 
         self.qubit_op, self.aux_ops = self.core.run(self.qmolecule)
 
-        self.init_var_form()
-
         # initial state
         self.init_state = HartreeFock(num_orbitals=self.core._molecule_info['num_orbitals'], 
                                       qubit_mapping=self.core._qubit_mapping,
                                       two_qubit_reduction=self.core._two_qubit_reduction, 
                                       num_particles=self.core._molecule_info['num_particles'])
 
+        self.init_var_form()
         
         self.init_vqe()
 
