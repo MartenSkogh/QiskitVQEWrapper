@@ -110,7 +110,7 @@ class VQEWrapper():
                             callback=self.vqe_callback)
 
     def init_var_form(self):
-        if self.ansatz.upper() = 'UCCSD':
+        if self.ansatz.upper() == 'UCCSD':
             # UCCSD Ansatz
             self.var_form = UCCSD(num_orbitals=self.core._molecule_info['num_orbitals'], 
                                   num_particles=self.core._molecule_info['num_particles'], 
