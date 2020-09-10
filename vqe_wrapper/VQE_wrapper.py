@@ -49,7 +49,9 @@ class VQEWrapper():
         self.initial_point = None
 
         self.optimizer = SLSQP(maxiter=5000)
-
+        self.ansatz = 'UCCSD'
+        self.excitation_type = 'sd'
+        
         # Choose the backend (use Aer instead of BasicAer) 
         self.backend = Aer.get_backend('statevector_simulator') 
         self.quantum_instance = QuantumInstance(backend=self.backend)
@@ -88,20 +90,14 @@ class VQEWrapper():
 
         self.qubit_op, self.aux_ops = self.core.run(self.qmolecule)
 
+        self.init_var_form()
+
         # initial state
         self.init_state = HartreeFock(num_orbitals=self.core._molecule_info['num_orbitals'], 
                                       qubit_mapping=self.core._qubit_mapping,
                                       two_qubit_reduction=self.core._two_qubit_reduction, 
                                       num_particles=self.core._molecule_info['num_particles'])
 
-        # UCCSD Ansatz
-        self.var_form = UCCSD(num_orbitals=self.core._molecule_info['num_orbitals'], 
-                              num_particles=self.core._molecule_info['num_particles'], 
-                              initial_state=self.init_state, 
-                              qubit_mapping=self.core._qubit_mapping, 
-                              two_qubit_reduction=self.core._two_qubit_reduction, 
-                              num_time_slices=1, 
-                              shallow_circuit_concat=False)
         
         self.init_vqe()
 
@@ -113,6 +109,18 @@ class VQEWrapper():
                             initial_point=self.initial_point, 
                             callback=self.vqe_callback)
 
+    def init_var_form(self):
+        if self.ansatz.upper() = 'UCCSD':
+            # UCCSD Ansatz
+            self.var_form = UCCSD(num_orbitals=self.core._molecule_info['num_orbitals'], 
+                                  num_particles=self.core._molecule_info['num_particles'], 
+                                  initial_state=self.init_state, 
+                                  qubit_mapping=self.core._qubit_mapping, 
+                                  two_qubit_reduction=self.core._two_qubit_reduction, 
+                                  num_time_slices=1, 
+                                  excitation_type=self.excitation_type,
+                                  shallow_circuit_concat=False)
+            
 
     def run_vqe(self):
         # run the algorithm
