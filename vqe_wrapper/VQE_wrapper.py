@@ -24,7 +24,6 @@ class VQEWrapper():
     def __init__(self):
         # These things need to be set before running
         self.molecule_string = None
-        self.charge = None
         # You can make a pretty educated guess for these two
         self.spin = None
         self.charge = None
