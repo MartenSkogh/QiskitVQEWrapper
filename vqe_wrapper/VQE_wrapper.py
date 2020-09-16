@@ -57,6 +57,7 @@ class VQEWrapper():
 
         self.vqe_algo = None
 
+        self.var_form = None
         self.vqe_callback = None
         self.vqe_time = None
 
@@ -118,6 +119,9 @@ class VQEWrapper():
                                   num_time_slices=1, 
                                   excitation_type=self.excitation_type,
                                   shallow_circuit_concat=False)
+        else:
+            if self.var_form is None:
+                raise ValueError('No variational form specified!')
             
 
     def run_vqe(self):
