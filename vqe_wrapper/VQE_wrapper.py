@@ -74,7 +74,6 @@ class VQEWrapper():
         #print(f"  Spin: {self.spin}")
 
         self.init_driver()
-        self.init_driver()
         self.init_ops()
         self.init_init_state()
         self.init_var_form()
