@@ -73,6 +73,14 @@ class VQEWrapper():
         #print(f"  Charge: {self.charge}")
         #print(f"  Spin: {self.spin}")
 
+        self.init_driver()
+        self.init_driver()
+        self.init_ops()
+        self.init_init_state()
+        self.init_var_form()
+        self.init_vqe()
+
+    def init_driver(self):
         self.driver = PySCFDriver(atom=self.molecule_string, 
                                   unit=self.length_unit, 
                                   charge=self.charge,
@@ -81,24 +89,25 @@ class VQEWrapper():
                                   basis=self.basis)
 
         self.qmolecule = self.driver.run()
+        
 
+    def init_core(self):
         self.core = Hamiltonian(transformation=self.transformation, 
                            qubit_mapping=self.qubit_mapping, 
                            two_qubit_reduction=self.two_qubit_reduction, 
                            freeze_core=self.freeze_core, 
                            orbital_reduction=self.orbital_reduction)
 
+    def init_ops(self):
         self.qubit_op, self.aux_ops = self.core.run(self.qmolecule)
 
-        # initial state
+
+    def init_init_state(self):
         self.init_state = HartreeFock(num_orbitals=self.core._molecule_info['num_orbitals'], 
                                       qubit_mapping=self.core._qubit_mapping,
                                       two_qubit_reduction=self.core._two_qubit_reduction, 
                                       num_particles=self.core._molecule_info['num_particles'])
 
-        self.init_var_form()
-        
-        self.init_vqe()
 
     #set up VQE
     def init_vqe(self):
@@ -107,6 +116,7 @@ class VQEWrapper():
                             self.optimizer, 
                             initial_point=self.initial_point, 
                             callback=self.vqe_callback)
+
 
     def init_var_form(self):
         if self.ansatz.upper() == 'UCCSD':
