@@ -50,6 +50,8 @@ class VQEWrapper():
         self.optimizer = SLSQP(maxiter=5000)
         self.ansatz = 'UCCSD'
         self.excitation_type = 'sd'
+        self.num_time_slices = 1
+        self.shallow_circuit_concat = False
         
         # Choose the backend (use Aer instead of BasicAer) 
         self.backend = Aer.get_backend('statevector_simulator') 
@@ -126,9 +128,9 @@ class VQEWrapper():
                                   initial_state=self.init_state, 
                                   qubit_mapping=self.core._qubit_mapping, 
                                   two_qubit_reduction=self.core._two_qubit_reduction, 
-                                  num_time_slices=1, 
+                                  num_time_slices=self.num_time_slices, 
                                   excitation_type=self.excitation_type,
-                                  shallow_circuit_concat=False)
+                                  shallow_circuit_concat=self.shallow_circuit_concat)
         else:
             if self.var_form is None:
                 raise ValueError('No variational form specified!')
