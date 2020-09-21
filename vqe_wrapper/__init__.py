@@ -1,2 +1,2 @@
 
-from VQE_wrapper import VQEWrapper
+from .VQE_wrapper import VQEWrapper
