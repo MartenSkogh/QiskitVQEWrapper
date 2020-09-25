@@ -134,7 +134,24 @@ class VQEWrapper():
         else:
             if self.var_form is None:
                 raise ValueError('No variational form specified!')
-            
+                
+    def print_config(self):
+        print(f'\n\n=== MOLECULAR INFORMATION ===')
+        print(f'*  Molecule string: {self.molecule_string}')
+        print(f'*  Charge: {self.charge}')
+        print(f'*  Spin (2S): {self.spin}')
+        print(f'*  Basis set: {self.basis}')
+        print(f'*  Num orbitals: {self.qmolecule.num_orbitals}')
+        print(f'*  Lenght Unit: {self.length_unit}')
+        print(f'*  HF method: {self.hf_method}')
+        
+        print(f'\n\n=== HAMILTONIAN INFORMATION ===')
+        print(f'*  Transformation type: {self.transformation}')
+        print(f'*  Qubit mapping: {self.qubit_mapping}')
+ #                          qubit_mapping=self.qubit_mapping, 
+ #                          two_qubit_reduction=self.two_qubit_reduction, 
+ #                          freeze_core=self.freeze_core, 
+ #                          orbital_reduction=self.orbital_reduction}')
 
     def run_vqe(self):
         # run the algorithm
