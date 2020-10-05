@@ -5,6 +5,7 @@ import re
 from copy import deepcopy
 from pprint import pprint
 from timeit import default_timer as timer
+from enum import Enum
 
 from qiskit import Aer
 from qiskit.aqua import QuantumInstance
@@ -13,18 +14,20 @@ from qiskit.aqua.algorithms.minimum_eigen_solvers import VQE
 from qiskit.aqua.algorithms import ExactEigensolver
 from qiskit.aqua.components.optimizers import SLSQP, L_BFGS_B, COBYLA, SPSA
 from qiskit.chemistry.core import Hamiltonian, TransformationType, QubitMappingType
-from qiskit.chemistry.drivers import PySCFDriver, UnitsType
+from qiskit.chemistry.drivers import PySCFDriver, GaussianDriver, UnitsType, HFMethodType
 from qiskit.chemistry.components.variational_forms import UCCSD 
 from qiskit.chemistry.components.initial_states import HartreeFock
-from qiskit.chemistry.drivers import HFMethodType
 
+class DriverType(Enum):
+    """ DriverType Enum """
+    PYSCF = 'PySCF'
+    GAUSSIAN = 'Gaussian'
 
 class VQEWrapper():
     
     def __init__(self):
         # These things need to be set before running
         self.molecule_string = None
-        self.charge = None
         # You can make a pretty educated guess for these two
         self.spin = None
         self.charge = None
@@ -32,17 +35,22 @@ class VQEWrapper():
         self.qmolecule = None
 
         self.length_unit = UnitsType.ANGSTROM
-        self.basis = 'sto3g'
+        #Basis has to be in a format accepted by Gaussian (sto-3g, 6-31g)
+        self.basis = 'sto-3g'
         self.hf_method = HFMethodType.UHF
 
+        self.chem_driver = DriverType.GAUSSIAN
         self.driver = None
         self.core = None
 
         self.transformation = TransformationType.FULL
         self.qubit_mapping = QubitMappingType.JORDAN_WIGNER
         self.two_qubit_reduction = False
-        self.freeze_core = False
+        self.freeze_core = True
         self.orbital_reduction = []
+
+        #Parallelization threshold in number of qubits (14 if not specified)
+        self.par_thres = 14
 
         self.qubit_op = None
         self.aux_ops = None
@@ -52,7 +60,8 @@ class VQEWrapper():
 
         # Choose the backend (use Aer instead of BasicAer) 
         self.backend = Aer.get_backend('statevector_simulator') 
-        self.quantum_instance = QuantumInstance(backend=self.backend)
+        self.quantum_instance = QuantumInstance(backend=self.backend,
+                                                backend_options = {'statevector_parallel_threshold':self.par_thres})
 
         self.vqe_algo = None
 
@@ -64,19 +73,27 @@ class VQEWrapper():
         opt_str = match.group(1)
         return opt_str
 
+    def gaussian_config(self):
+        #Formats properties to a string fitting the gaussian input format
+        gaussian_config = f'# {self.hf_method.value}/{self.basis} scf(conventional)\n\nMolecule\n\n{self.charge} {self.spin+1}\n'
+        gaussian_config = gaussian_config + self.molecule_string.replace('; ','\n') + '\n\n'
+        return gaussian_config
 
     def initiate(self):
         #print("Setting up system:")
         #print(f"  Molecule: {self.molecule_string}")
         #print(f"  Charge: {self.charge}")
         #print(f"  Spin: {self.spin}")
+        if self.chem_driver.value == 'PySCF':
+            self.driver = PySCFDriver(atom=self.molecule_string, 
+                                      unit=self.length_unit, 
+                                      charge=self.charge,
+                                      spin=self.spin,
+                                      hf_method=self.hf_method,
+                                      basis=self.basis)
 
-        self.driver = PySCFDriver(atom=self.molecule_string, 
-                                  unit=self.length_unit, 
-                                  charge=self.charge,
-                                  spin=self.spin,
-                                  hf_method=self.hf_method,
-                                  basis=self.basis)
+        elif self.chem_driver.value == 'Gaussian':
+            self.driver = GaussianDriver(config=self.gaussian_config())
 
         self.qmolecule = self.driver.run()
 
