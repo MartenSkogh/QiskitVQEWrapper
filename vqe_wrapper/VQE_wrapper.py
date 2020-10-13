@@ -55,8 +55,18 @@ class VQEWrapper():
 
         self.optimizer = SLSQP(maxiter=5000)
 
+        self.ansatz = 'UCCSD'
+        self.excitation_type = 'sd'
+        self.num_time_slices = 1
+        self.shallow_circuit_concat = False
+        
+        # Choose the backend (use Aer instead of BasicAer) 
+        self.backend = Aer.get_backend('statevector_simulator') 
+        self.quantum_instance = QuantumInstance(backend=self.backend)
+
         self.vqe_algo = None
 
+        self.var_form = None
         self.vqe_callback = None
         self.vqe_time = None
 
@@ -82,6 +92,15 @@ class VQEWrapper():
         return gaussian_config
 
     def initiate(self):
+
+        self.init_driver()
+        self.init_core()
+        self.init_ops()
+        self.init_init_state()
+        self.init_var_form()
+        self.init_vqe()
+
+    def init_driver(self):
         if self.chem_driver.value == 'PySCF':
             self.driver = PySCFDriver(atom=self.molecule_string, 
                                       unit=self.length_unit, 
@@ -94,31 +113,26 @@ class VQEWrapper():
             self.driver = GaussianDriver(config=self.gaussian_config())
 
         self.qmolecule = self.driver.run()
+        
 
+    def init_core(self):
         self.core = Hamiltonian(transformation=self.transformation, 
                                 qubit_mapping=self.qubit_mapping, 
                                 two_qubit_reduction=self.two_qubit_reduction, 
                                 freeze_core=self.freeze_core, 
                                 orbital_reduction=self.orbital_reduction)
 
+    def init_ops(self):
         self.qubit_op, self.aux_ops = self.core.run(self.qmolecule)
 
         #Initial state
+
+    def init_init_state(self):
         self.init_state = HartreeFock(num_orbitals=self.core._molecule_info['num_orbitals'], 
                                       qubit_mapping=self.core._qubit_mapping,
                                       two_qubit_reduction=self.core._two_qubit_reduction, 
                                       num_particles=self.core._molecule_info['num_particles'])
 
-        #UCCSD Ansatz
-        self.var_form = UCCSD(num_orbitals=self.core._molecule_info['num_orbitals'], 
-                              num_particles=self.core._molecule_info['num_particles'], 
-                              initial_state=self.init_state, 
-                              qubit_mapping=self.core._qubit_mapping, 
-                              two_qubit_reduction=self.core._two_qubit_reduction, 
-                              num_time_slices=1, 
-                              shallow_circuit_concat=False)
-        
-        self.init_vqe()
 
     #Set up VQE
     def init_vqe(self):
@@ -128,6 +142,39 @@ class VQEWrapper():
                             initial_point=self.initial_point, 
                             callback=self.vqe_callback)
 
+
+    def init_var_form(self):
+        if self.ansatz.upper() == 'UCCSD':
+            # UCCSD Ansatz
+            self.var_form = UCCSD(num_orbitals=self.core._molecule_info['num_orbitals'], 
+                                  num_particles=self.core._molecule_info['num_particles'], 
+                                  initial_state=self.init_state, 
+                                  qubit_mapping=self.core._qubit_mapping, 
+                                  two_qubit_reduction=self.core._two_qubit_reduction, 
+                                  num_time_slices=self.num_time_slices, 
+                                  excitation_type=self.excitation_type,
+                                  shallow_circuit_concat=self.shallow_circuit_concat)
+        else:
+            if self.var_form is None:
+                raise ValueError('No variational form specified!')
+                
+    def print_config(self):
+        print(f'\n\n=== MOLECULAR INFORMATION ===')
+        print(f'*  Molecule string: {self.molecule_string}')
+        print(f'*  Charge: {self.charge}')
+        print(f'*  Spin (2S): {self.spin}')
+        print(f'*  Basis set: {self.basis}')
+        print(f'*  Num orbitals: {self.qmolecule.num_orbitals}')
+        print(f'*  Lenght Unit: {self.length_unit}')
+        print(f'*  HF method: {self.hf_method}')
+        
+        print(f'\n\n=== HAMILTONIAN INFORMATION ===')
+        print(f'*  Transformation type: {self.transformation}')
+        print(f'*  Qubit mapping: {self.qubit_mapping}')
+ #                          qubit_mapping=self.qubit_mapping, 
+ #                          two_qubit_reduction=self.two_qubit_reduction, 
+ #                          freeze_core=self.freeze_core, 
+ #                          orbital_reduction=self.orbital_reduction}')
 
     def run_vqe(self):
         #Run the algorithm
