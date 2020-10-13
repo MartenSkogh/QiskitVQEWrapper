@@ -5,6 +5,7 @@ import re
 from copy import deepcopy
 from pprint import pprint
 from timeit import default_timer as timer
+from enum import Enum
 
 from qiskit import Aer
 from qiskit.aqua import QuantumInstance
@@ -13,11 +14,14 @@ from qiskit.aqua.algorithms.minimum_eigen_solvers import VQE
 from qiskit.aqua.algorithms import ExactEigensolver
 from qiskit.aqua.components.optimizers import SLSQP, L_BFGS_B, COBYLA, SPSA
 from qiskit.chemistry.core import Hamiltonian, TransformationType, QubitMappingType
-from qiskit.chemistry.drivers import PySCFDriver, UnitsType
+from qiskit.chemistry.drivers import PySCFDriver, GaussianDriver, UnitsType, HFMethodType
 from qiskit.chemistry.components.variational_forms import UCCSD 
 from qiskit.chemistry.components.initial_states import HartreeFock
-from qiskit.chemistry.drivers import HFMethodType
 
+class DriverType(Enum):
+    """ DriverType Enum """
+    PYSCF = 'PySCF'
+    GAUSSIAN = 'Gaussian'
 
 class VQEWrapper():
     
@@ -31,16 +35,18 @@ class VQEWrapper():
         self.qmolecule = None
 
         self.length_unit = UnitsType.ANGSTROM
-        self.basis = 'sto3g'
+        #Basis has to be in a format accepted by Gaussian (sto-3g, 6-31g)
+        self.basis = 'sto-3g'
         self.hf_method = HFMethodType.UHF
 
+        self.chem_driver = DriverType.GAUSSIAN
         self.driver = None
         self.core = None
 
         self.transformation = TransformationType.FULL
         self.qubit_mapping = QubitMappingType.JORDAN_WIGNER
         self.two_qubit_reduction = False
-        self.freeze_core = False
+        self.freeze_core = True
         self.orbital_reduction = []
 
         self.qubit_op = None
@@ -48,6 +54,7 @@ class VQEWrapper():
         self.initial_point = None
 
         self.optimizer = SLSQP(maxiter=5000)
+
         self.ansatz = 'UCCSD'
         self.excitation_type = 'sd'
         self.num_time_slices = 1
@@ -63,17 +70,28 @@ class VQEWrapper():
         self.vqe_callback = None
         self.vqe_time = None
 
+        #Choose the backend (use Aer instead of BasicAer) 
+        self.simulator = 'statevector_simulator'
+        self.backend_options = {}
+
+
+    def init_backend(self):
+        self.backend = Aer.get_backend(self.simulator) 
+        self.quantum_instance = QuantumInstance(backend=self.backend,
+                                                backend_options = self.backend_options)
+
     def opt_str(self):
         match = re.search(r'optimizers.[A-z]+.(.+) object', str(self.optimizer))
         opt_str = match.group(1)
         return opt_str
 
+    def gaussian_config(self):
+        #Format properties to a string fitting the gaussian input format
+        gaussian_config = f'# {self.hf_method.value}/{self.basis} scf(conventional)\n\nMolecule\n\n{self.charge} {self.spin+1}\n'
+        gaussian_config = gaussian_config + self.molecule_string.replace('; ','\n') + '\n\n'
+        return gaussian_config
 
     def initiate(self):
-        #print("Setting up system:")
-        #print(f"  Molecule: {self.molecule_string}")
-        #print(f"  Charge: {self.charge}")
-        #print(f"  Spin: {self.spin}")
 
         self.init_driver()
         self.init_core()
@@ -83,26 +101,31 @@ class VQEWrapper():
         self.init_vqe()
 
     def init_driver(self):
-        self.driver = PySCFDriver(atom=self.molecule_string, 
-                                  unit=self.length_unit, 
-                                  charge=self.charge,
-                                  spin=self.spin,
-                                  hf_method=self.hf_method,
-                                  basis=self.basis)
+        if self.chem_driver.value == 'PySCF':
+            self.driver = PySCFDriver(atom=self.molecule_string, 
+                                      unit=self.length_unit, 
+                                      charge=self.charge,
+                                      spin=self.spin,
+                                      hf_method=self.hf_method,
+                                      basis=self.basis)
+
+        elif self.chem_driver.value == 'Gaussian':
+            self.driver = GaussianDriver(config=self.gaussian_config())
 
         self.qmolecule = self.driver.run()
         
 
     def init_core(self):
         self.core = Hamiltonian(transformation=self.transformation, 
-                           qubit_mapping=self.qubit_mapping, 
-                           two_qubit_reduction=self.two_qubit_reduction, 
-                           freeze_core=self.freeze_core, 
-                           orbital_reduction=self.orbital_reduction)
+                                qubit_mapping=self.qubit_mapping, 
+                                two_qubit_reduction=self.two_qubit_reduction, 
+                                freeze_core=self.freeze_core, 
+                                orbital_reduction=self.orbital_reduction)
 
     def init_ops(self):
         self.qubit_op, self.aux_ops = self.core.run(self.qmolecule)
 
+        #Initial state
 
     def init_init_state(self):
         self.init_state = HartreeFock(num_orbitals=self.core._molecule_info['num_orbitals'], 
@@ -111,7 +134,7 @@ class VQEWrapper():
                                       num_particles=self.core._molecule_info['num_particles'])
 
 
-    #set up VQE
+    #Set up VQE
     def init_vqe(self):
         self.vqe_algo = VQE(self.qubit_op, 
                             self.var_form, 
@@ -154,12 +177,12 @@ class VQEWrapper():
  #                          orbital_reduction=self.orbital_reduction}')
 
     def run_vqe(self):
-        # run the algorithm
+        #Run the algorithm
         vqe_start = timer()
         self.vqe_result = self.vqe_algo.run(self.quantum_instance)
         self.vqe_time = timer() - vqe_start
 
-        # get the results
+        #Get the results
         result = self.core.process_algorithm_result(self.vqe_result) 
 
         return result
