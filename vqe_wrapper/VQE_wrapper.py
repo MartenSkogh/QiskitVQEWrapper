@@ -59,10 +59,6 @@ class VQEWrapper():
         self.excitation_type = 'sd'
         self.num_time_slices = 1
         self.shallow_circuit_concat = False
-        
-        # Choose the backend (use Aer instead of BasicAer) 
-        self.backend = Aer.get_backend('statevector_simulator') 
-        self.quantum_instance = QuantumInstance(backend=self.backend)
 
         self.vqe_algo = None
 
@@ -74,11 +70,6 @@ class VQEWrapper():
         self.simulator = 'statevector_simulator'
         self.backend_options = {}
 
-
-    def init_backend(self):
-        self.backend = Aer.get_backend(self.simulator) 
-        self.quantum_instance = QuantumInstance(backend=self.backend,
-                                                backend_options = self.backend_options)
 
     def opt_str(self):
         match = re.search(r'optimizers.[A-z]+.(.+) object', str(self.optimizer))
@@ -93,12 +84,18 @@ class VQEWrapper():
 
     def initiate(self):
 
+        self.init_backend()
         self.init_driver()
         self.init_core()
         self.init_ops()
         self.init_init_state()
         self.init_var_form()
         self.init_vqe()
+
+    def init_backend(self):
+        self.backend = Aer.get_backend(self.simulator) 
+        self.quantum_instance = QuantumInstance(backend=self.backend,
+                                                backend_options = self.backend_options)
 
     def init_driver(self):
         if self.chem_driver.value == 'PySCF':
