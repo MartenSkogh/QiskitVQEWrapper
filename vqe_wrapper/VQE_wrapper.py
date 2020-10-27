@@ -68,6 +68,7 @@ class VQEWrapper():
 
         #Choose the backend (use Aer instead of BasicAer) 
         self.simulator = 'statevector_simulator'
+        self.shots = 1024
         self.backend_options = {}
 
 
@@ -110,6 +111,7 @@ class VQEWrapper():
     def init_backend(self):
         self.backend = Aer.get_backend(self.simulator) 
         self.quantum_instance = QuantumInstance(backend=self.backend,
+                                                shots=self.shots,
                                                 backend_options = self.backend_options)
 
     def init_core(self):
