@@ -72,6 +72,7 @@ class VQEWrapper():
         self.seed_simulator = None
         self.seed_transpiler = None
         self.noise_model = None
+        self.measurement_error_mitigation_cls = None
         self.backend_options = {}
 
 
@@ -118,6 +119,7 @@ class VQEWrapper():
                                                 seed_simulator = self.seed_simulator,
                                                 seed_transpiler = self.seed_transpiler,
                                                 noise_model = self.noise_model,
+                                                measurement_error_mitigation_cls = self.measurement_error_mitigation_cls,
                                                 backend_options = self.backend_options)
 
     def init_core(self):
