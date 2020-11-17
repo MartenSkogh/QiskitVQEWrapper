@@ -40,6 +40,8 @@ class VQEWrapper():
         self.hf_method = HFMethodType.UHF
 
         self.chem_driver = DriverType.GAUSSIAN
+        self.gaussian_checkfile = ''
+        
         self.driver = None
         self.core = None
 
@@ -83,7 +85,11 @@ class VQEWrapper():
 
     def gaussian_config(self):
         #Format properties to a string fitting the gaussian input format
-        gaussian_config = f'# {self.hf_method.value}/{self.basis} scf(conventional)\n\nMolecule\n\n{self.charge} {self.spin+1}\n'
+        if self.gaussian_checkfile != '':
+            chk = f'%Chk={self.gaussian_checkfile}\n'
+        else:
+            chk = ''
+        gaussian_config = chk + f'# {self.hf_method.value}/{self.basis} scf(conventional)\n\nMolecule\n\n{self.charge} {self.spin+1}\n'
         gaussian_config = gaussian_config + self.molecule_string.replace('; ','\n') + '\n\n'
         return gaussian_config
 
