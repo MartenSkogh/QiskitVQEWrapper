@@ -26,6 +26,8 @@ class DriverType(Enum):
 class VQEWrapper():
     
     def __init__(self):
+
+        ### MOLECULE ###
         # These things need to be set before running
         self.molecule_string = None
         # You can make a pretty educated guess for these two
@@ -34,17 +36,18 @@ class VQEWrapper():
 
         self.qmolecule = None
 
-        self.length_unit = UnitsType.ANGSTROM
+        ### CHEMISTRY DRIVER ###
         #Basis has to be in a format accepted by Gaussian (sto-3g, 6-31g)
         self.basis = 'sto-3g'
-        self.hf_method = HFMethodType.UHF
-
         self.chem_driver = DriverType.GAUSSIAN
+        self.hf_method = HFMethodType.UHF
+        self.length_unit = UnitsType.ANGSTROM
         self.gaussian_checkfile = ''
         
         self.driver = None
         self.core = None
 
+        ### HAMILTONIAN ###
         self.transformation = TransformationType.FULL
         self.qubit_mapping = QubitMappingType.JORDAN_WIGNER
         self.two_qubit_reduction = False
@@ -68,6 +71,8 @@ class VQEWrapper():
         self.vqe_callback = None
         self.vqe_time = None
 
+
+        ### BACKEND CONFIG ###
         #Choose the backend (use Aer instead of BasicAer) 
         self.simulator = 'statevector_simulator'
         self.shots = 1024
@@ -184,10 +189,15 @@ class VQEWrapper():
         print(f'\n\n=== HAMILTONIAN INFORMATION ===')
         print(f'*  Transformation type: {self.transformation}')
         print(f'*  Qubit mapping: {self.qubit_mapping}')
- #                          qubit_mapping=self.qubit_mapping, 
- #                          two_qubit_reduction=self.two_qubit_reduction, 
- #                          freeze_core=self.freeze_core, 
- #                          orbital_reduction=self.orbital_reduction}')
+        print(f'*  Two qubit reduction: {two_qubit_reduction=self.two_qubit_reduction}')
+        print(f'*  Freeze core: {freeze_core=self.freeze_core}')
+        print(f'*  Orbital reduction: {orbital_reduction=self.orbital_reduction}')
+
+        print(f'\n\n=== CHEMISTRY DRIVER INFORMATION ===')
+        print(f'*  Not yet implemented!')
+
+        print(f'\n\n=== BACKEND INFORMATION ===')
+        print(f'*  Not yet implemented!')
 
     def run_vqe(self):
         #Run the algorithm
