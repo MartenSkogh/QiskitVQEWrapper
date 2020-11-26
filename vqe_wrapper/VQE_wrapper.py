@@ -109,7 +109,13 @@ class VQEWrapper():
         self.init_vqe()
 
     def init_driver(self):
+
         if self.chem_driver.value == 'PySCF':
+            if self.hf_method == HFMethodType.RHF and self.spin % 2 == 0:
+                print(f'WARNING: Restricted Hartree-Fock (RHF) cannot handle unpaired electrons!')
+                print(f'Switching to Unrestricted Hartree-Fock!')
+                self.chem_driver = HFMethodType.UHF
+
             self.driver = PySCFDriver(atom=self.molecule_string, 
                                       unit=self.length_unit, 
                                       charge=self.charge,
@@ -189,9 +195,9 @@ class VQEWrapper():
         print(f'\n\n=== HAMILTONIAN INFORMATION ===')
         print(f'*  Transformation type: {self.transformation}')
         print(f'*  Qubit mapping: {self.qubit_mapping}')
-        print(f'*  Two qubit reduction: {two_qubit_reduction=self.two_qubit_reduction}')
-        print(f'*  Freeze core: {freeze_core=self.freeze_core}')
-        print(f'*  Orbital reduction: {orbital_reduction=self.orbital_reduction}')
+        print(f'*  Two qubit reduction: {self.two_qubit_reduction}')
+        print(f'*  Freeze core: {self.freeze_core}')
+        print(f'*  Orbital reduction: {self.orbital_reduction}')
 
         print(f'\n\n=== CHEMISTRY DRIVER INFORMATION ===')
         print(f'*  Not yet implemented!')
